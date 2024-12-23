@@ -32,7 +32,6 @@ DECL_CONSTANT("STEPPER_STEP_BOTH_EDGE", 1);
 
 struct stepper_move {
     struct move_node node;
-    uint32_t first_interval;
     uint32_t interval;
 #if CONFIG_HIGH_PREC_STEP
     // Extra fields for high precision stepping
@@ -125,7 +124,6 @@ stepper_load_next(struct stepper *s)
     // Load next 'struct stepper_move' into 'struct stepper'
     struct move_node *mn = move_queue_pop(&s->mq);
     struct stepper_move *m = container_of(mn, struct stepper_move, node);
-    s->interval = m->interval;
     s->add = m->add;
 #if CONFIG_HIGH_PREC_STEP
     s->interval = m->next_interval;
@@ -152,7 +150,7 @@ stepper_load_next(struct stepper *s)
     } else {
         // It is necessary to schedule unstep events and so there are
         // twice as many events.
-        s->next_step_time += m->first_interval;
+        s->next_step_time += m->interval;
         s->time.waketime = s->next_step_time;
         s->count = s->flags & SF_SINGLE_SCHED ? m->count : (uint32_t)m->count*2;
     }

@@ -4,6 +4,9 @@
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
 
+# host file
+host-tool-src = tool/host_crc16.c
+
 # Output directory
 OUT=out/
 
@@ -52,6 +55,8 @@ CPPFLAGS = -I$(OUT) -P -MD -MT $@
 
 # Default targets
 target-y := $(OUT)klipper.elf
+target-y += $(OUT)hostCrc16.elf
+
 
 all:
 
@@ -63,6 +68,37 @@ Q=@
 MAKEFLAGS += --no-print-directory
 endif
 
+##### Process board hardware and firmware version
+
+ifeq ($(CONFIG_BOARD_INFO_CONFIGURE),y)
+
+ifeq ($(CONFIG_MAIN_MCU_BOARD),y)
+board_type := mcu
+else ifeq ($(CONFIG_NOZZLE_MCU_BOARD),y)
+board_type := noz
+else ifeq ($(CONFIG_BED_MCU_BOARD),y)
+board_type := bed
+endif
+
+ifneq ($(CONFIG_MCU_MENU),)
+mcu_menu := $(patsubst "%",%,$(CONFIG_MCU_MENU))
+else
+mcu_menu :=
+endif
+
+ifneq ($(CONFIG_MCU_TYPE),)
+mcu_type := $(patsubst "%",%,$(CONFIG_MCU_TYPE))
+else
+mcu_type :=
+endif
+
+board_hw_version := $(board_type)$(CONFIG_MCU_BOARD_ID)_$(CONFIG_MCU_BOARD_HW_VER)_$(mcu_menu)$(mcu_type)
+board_fw_version := $(board_type)$(CONFIG_MCU_BOARD_ID)_$(CONFIG_MCU_BOARD_FW_VER)_$(CONFIG_MCU_BOARD_FW_RESERVED)
+
+CFLAGS += -DBOARD_FW_VERSION=\"$(board_fw_version)\"
+
+export board_hw_version board_fw_version
+endif
 # Include board specific makefile
 include src/Makefile
 -include src/extras/Makefile
@@ -78,10 +114,13 @@ $(OUT)%.ld: %.lds.S $(OUT)autoconf.h
 	@echo "  Preprocessing $@"
 	$(Q)$(CPP) -I$(OUT) -P -MD -MT $@ $< -o $@
 
-$(OUT)klipper.elf: $(OBJS_klipper.elf)
+$(OUT)klipper.elf: $(OBJS_klipper.elf) $(OUT)hostCrc16.elf
 	@echo "  Linking $@"
 	$(Q)$(CC) $(OBJS_klipper.elf) $(CFLAGS_klipper.elf) -o $@
 	$(Q)scripts/check-gcc.sh $@ $(OUT)compile_time_request.o
+$(OUT)hostCrc16.elf: $(host-tool-src)
+	@echo "  Compiling and Linking $@"
+	$(Q)gcc $< -o $@
 
 ################ Compile time requests
 
@@ -125,6 +164,8 @@ $(KCONFIG_CONFIG) olddefconfig: src/Kconfig
 
 menuconfig:
 	$(Q)$(PYTHON) lib/kconfiglib/menuconfig.py src/Kconfig
+	@echo "  Board HW Ver: $(board_hw_version)"
+	@echo "  Board FW Ver: $(board_fw_version)"
 
 ################ Generic rules
 

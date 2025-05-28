@@ -2,6 +2,44 @@
 
 mainmenu "Klipper Firmware Configuration"
 
+config BOARD_INFO_CONFIGURE
+    bool "Board info configure"
+    depends on MACH_STM32 || MACH_GD32
+    default n
+    help
+        Enable board info configure, we can update mcu firmware
+        by Linux with uart port.
+
+menu "Board Configure"
+    depends on BOARD_INFO_CONFIGURE
+    choice
+    prompt "Board Type"
+        config MAIN_MCU_BOARD
+            bool "Main MCU"
+        config NOZZLE_MCU_BOARD
+            bool "Nozzle MCU"
+        config BED_MCU_BOARD
+            bool "Bed MCU"
+    endchoice
+
+    config MCU_BOARD_ID
+        int "MCU Board ID"
+        default 0
+
+    config MCU_BOARD_HW_VER
+        int "HW Version"
+        default 000
+
+    config MCU_BOARD_FW_VER
+        int "FW Version"
+        default 000
+
+    config MCU_BOARD_FW_RESERVED
+        int "FW Reserved"
+        default 000
+
+endmenu
+
 config LOW_LEVEL_OPTIONS
     bool "Enable extra low-level configuration options"
     help
@@ -20,6 +58,8 @@ choice
         bool "LPC176x"
     config MACH_STM32
         bool "STMicroelectronics STM32"
+    config MACH_GD32
+	bool "Giga Device GD32"
     config MACH_HC32F460
         bool "Huada Semiconductor HC32F460"
     config MACH_RPXXXX
@@ -39,6 +79,7 @@ source "src/atsam/Kconfig"
 source "src/atsamd/Kconfig"
 source "src/lpc176x/Kconfig"
 source "src/stm32/Kconfig"
+source "src/gd32/Kconfig"
 source "src/hc32f460/Kconfig"
 source "src/rp2040/Kconfig"
 source "src/pru/Kconfig"
@@ -346,6 +387,13 @@ config HIGH_PREC_STEP
         FLASH_SIZE >= 0x8000 && (!MACH_AVR || FLASH_SIZE >= 0x10000)
     bool "High-precision stepping support (slow)"
     default n
+
+config BUILD_MACHINE_UID
+        string "Custom your machine firmware name as unique ID"
+        depends on LOW_LEVEL_OPTIONS
+        help
+                It is for klipper host making a distinction between each
+                printer when one host controls more than one machine.
 
 # The HAVE_x options allow boards to disable support for some commands
 # if the hardware does not support the feature.

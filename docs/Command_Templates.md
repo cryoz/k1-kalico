@@ -104,6 +104,9 @@ gcode:
   RESTORE_GCODE_STATE NAME=clean_nozzle_state
 ```
 
+Additionally, in macro contexts you can use `RETURN` to end macro execution
+early.
+
 #### Jinja2: Macro parameters
 
 It is often useful to inspect parameters passed to the macro when
@@ -329,10 +332,12 @@ gcode sequence:
 
 ```
 [delayed_gcode clear_display]
+description: Clear the LCD display message
 gcode:
   M117
 
 [gcode_macro load_filament]
+description: Load 50mm of filament
 gcode:
  G91
  G1 E50
